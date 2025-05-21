@@ -19,7 +19,7 @@ conda env create -f environment.yml
 ```
 After this completes you can open the Conda Environment by typing
 ```
-conda activate clone_task
+conda activate clone-task
 ```
 
 ## Running the System
