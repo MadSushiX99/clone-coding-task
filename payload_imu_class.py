@@ -1,7 +1,7 @@
 import struct
 from dataclasses import dataclass
 
-STRUCT_FORMAT = "<fffIfffIfffI"
+STRUCT_FORMAT = "<fffQiiiQfffQ"
 STRUCT_SIZE = struct.calcsize(STRUCT_FORMAT)
 
 # Define the IMU class
@@ -16,14 +16,14 @@ class Payload_IMU:
     zAcc: float         # Acceleration in Z direction [mg, g=9.81]
     timestampAcc: int   # Timestamp of the accelerometer measurement
 
-    xGyro: float        # Gyroscope measurement in X direction [mDeg/s]
-    yGyro: float        # Gyroscope measurement in Y direction [mDeg/s]
-    zGyro: float        # Gyroscope measurement in Z direction [mDeg/s]
+    xGyro: int        # Gyroscope measurement in X direction [mDeg/s]
+    yGyro: int        # Gyroscope measurement in Y direction [mDeg/s]
+    zGyro: int        # Gyroscope measurement in Z direction [mDeg/s]
     timestampGyro: int  # Timestamp of the gyroscope measurement
 
-    xMag: float         # Magnetometer measurement in X direction [uT]
-    yMag: float         # Magnetometer measurement in Y direction [uT]
-    zMag: float         # Magnetometer measurement in Z direction [uT]
+    xMag: float         # Magnetometer measurement in X direction [mGauss]
+    yMag: float         # Magnetometer measurement in Y direction [mGauss]
+    zMag: float         # Magnetometer measurement in Z direction [mGauss]
     timestampMag: int   # Timestamp of the magnetometer measurement
 
     @classmethod
@@ -37,6 +37,8 @@ class Payload_IMU:
         Returns:
             IMU: An instance of the IMU class with populated attributes.
         """
+        if len(data) != STRUCT_SIZE:
+            raise ValueError(f"Data size mismatch: expected {STRUCT_SIZE}, got {len(data)}")
         unpacked_data = struct.unpack(STRUCT_FORMAT, data)
         return cls(*unpacked_data)
     
@@ -47,5 +49,8 @@ class Payload_IMU:
         Returns:
             bytes: The byte array representation of the IMU data.
         """
-        packed_data = struct.pack(STRUCT_FORMAT, *self.__dict__.values())
+        try:
+            packed_data = struct.pack(STRUCT_FORMAT, *self.__dict__.values())
+        except struct.error as e:
+            raise ValueError(f"Packing error: {e}")
         return packed_data
