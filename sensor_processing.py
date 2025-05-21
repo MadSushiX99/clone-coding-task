@@ -1,6 +1,5 @@
 import quaternion
 import numpy as np
-from ahrs.filters.madgwick import Madgwick
 
 def gyro_to_delta_rot(newGyro, dt):
     """
@@ -25,9 +24,9 @@ def acc_mag_to_euler(accel, mag):
 
     roll = np.atan2(yAcc, zAcc)
     pitch = np.atan2(-xAcc, np.sqrt(yAcc**2 + zAcc**2))
-    Hx = -yMag*np.cos(roll) + zMag*np.sin(roll)
-    Hy = xMag*np.cos(pitch) + yMag*np.sin(roll)*np.sin(pitch) + zMag*np.cos(roll)*np.sin(pitch)
-    yaw = np.atan2(Hy, Hx)
+    Hx = xMag*np.cos(pitch) + zMag*np.sin(pitch)
+    Hy = xMag*np.sin(roll)*np.sin(pitch) + yMag*np.cos(roll) - zMag*np.sin(roll)*np.cos(pitch)
+    yaw = np.atan2(-Hy, Hx)
     return [roll, pitch, yaw]
 
 class Extended_Kalman_Filter:

@@ -9,13 +9,17 @@ from queue import Queue, Empty as QueueEmpty
 import quaternion
 import numpy as np
 from sensor_processing import Extended_Kalman_Filter as EKF, gyro_to_delta_rot, acc_mag_to_euler
+from visualizer import Visualizer
 
-def processing_thread(event, queue):
+def processing_thread(event, queue,):
     """
     Thread to handle printing of data.
     """
+    plotter = Visualizer()
+
     is_first_data = True
     is_first_queue_empty = True
+    gyro_state = np.array([0, 0, 0])
     while not event.is_set():
         try:
             result = queue.get(timeout=1) # wait for data to be available in the q
@@ -23,18 +27,21 @@ def processing_thread(event, queue):
 
             if is_first_data:
                 # Initialize the Extended Kalman Filter with the first data
-                ekf = EKF(quaternion.from_euler_angles(acc_mag_to_euler(accel, mag)))
+                gyro_state = acc_mag_to_euler(accel, mag)
+                ekf = EKF(quaternion.from_euler_angles(gyro_state))
                 is_first_data = False
 
             # Convert gyro data to delta rotation in radians
             delta_gyro = gyro_to_delta_rot(gyro, dt)
+            gyro_state = gyro_state + np.array(delta_gyro)
 
             # Convert accelerometer and magnetometer data to euler angles in radians
             euler_rotation = acc_mag_to_euler(accel, mag)
             
             ekf.predict(delta_gyro) # Predict the next state using the gyroscope data
             ekf.update(euler_rotation) # Update the state with the accelerometer and magnetometer data
-            print(ekf.q)
+
+            plotter.update_plot(gyro_state, euler_rotation, ekf.q) # Update the plot with the new data
 
         except QueueEmpty:
             if is_first_queue_empty:
@@ -102,7 +109,7 @@ if __name__ == "__main__":
                     accel = [result.xAcc, result.yAcc, result.zAcc]
                     gyro = [result.xGyro, result.yGyro, result.zGyro]
                     mag = [result.xMag, result.yMag, result.zMag]
-                    dt = float(result.timestampGyro - prev_timestamp) / 1000 # convert to milliseconds
+                    dt = float(result.timestampGyro - prev_timestamp) / 1000 # convert to seconds
                     prev_timestamp = result.timestampGyro
                     
                     # Perform Processing in a thread to preserve real-time data capture
